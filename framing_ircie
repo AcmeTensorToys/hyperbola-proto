@@ -1,0 +1,43 @@
+This document defines a transport format for IRCIE transport of Hyperbola
+datagrams.  Essentially, it allows controlled bridging of two Hyperbola
+device spaces over IRC.
+
+Hyperbola configuration commands, such as SET ADDRESS and SET UNDERLYING
+COMMUNICATIONS PARAMETERS are barred from transiting IRCIE.  Broadcast
+packets are likewise typically barred from transit.
+
+Payloadless broadcast IDENTIFY THYSELF commands are interpreted by the IRCIE
+transport agent; the querier will see only responses from devices to which
+the remote network has been granted access.
+
+To conserve space, the IRCIE transport sheds the constant 0x55 header byte
+and the payload length as these values may be reconstructed from the
+transport.
+
+The IRCIE transport allows payloads up to 20 bytes, counting the remaining
+bits of the Hyperbola header (addresses and command byte, so payloads will
+never be fewer than three bytes long).
+
+Pairs of bytes are treated as 16-bit numbers (first byte most significant)
+and T-encoded into 7 IRCIE symbols.  If there are an odd number of bytes,
+the last byte is T-encoded into 4 symbols.  This message is then sent inside
+an IRCIE message container (the reserved type tag is 6).
+
+Including IRCIE framing, a 20-byte message will come to 84 bytes of IRC
+message; a 19-byte one will come to 81 bytes.  For example:
+
+OO		FRAME
+OC_C	metaL = 76
+CC		Type = 6
+OCVB		Len = 70 
+BBBOBCC		\   Addresses
+BBB_BOC		h	Command & 0th byte of subpayload
+BBCCBVC		y	...
+BBCVB_C		p
+BBOBCBC		e
+BBOOCCC		r
+BBO_COC		b
+BBVCCVC		o
+BBVVC_C		l
+BOBC		/	15th byte of subpayload
+O		FRAME
