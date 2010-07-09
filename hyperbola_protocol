@@ -1,0 +1,76 @@
+The Hyperbola Protocol is a simple addressed TLV stream,
+modeled loosely on MIDI and the OpenAMD protocol set.
+
+The packet framing is composed of the following one-byte fields,
+which prefix data.
+	The constant byte 0x55.
+	A destination identifier/broadcast (sim. MIDI channel)
+	A source identifier
+	A packet length (of the data inside the frame)
+	A command byte
+
+On byte-wise transports, we suggest imposing a timeout rule of the form "if
+the line idles for more than N byte times while framing, reset the state
+machine."  On packetizing unreliable transports, we suggest not having
+Hyperbola packets straddle link-layer packets.
+
+There is a region of common commands understood by all Hyperbola
+devices (values 0x00 to 0x0F) and a region which is target device
+specific.
+
+The destination identifier 0xFF is reserved for broadcast and
+should only be used to carry payloads with common commands.  Hyberbola
+devices have a 4 byte device type ID and a 4 byte serial number
+(unique only within device types).
+
+Common commands:
+	0x00	IDENTIFY THYSELF
+		Expects either no payload or, for targeted pings, a
+		payload containing the device type ID and device serial number
+		and an opaque 8-byte value, which is returned.
+
+		Sends a response to the source containing this node's device type
+		and serial numbers and the opaque value, if any.  Additional
+		device-type specific data may also be returned following this
+		header.
+		
+		The "source indicator" for this response shall be the broadcast
+		address if the device does not have an address configured.
+
+	0x01	SET ADDRESS
+		As a broadcast payload, expects a payload containing:
+			The device type ID
+			The device serial number
+			The new device address
+		In unicast payload, expects only the new device address.
+
+		Responds from the new device address with an identical payload.
+
+	0x02	SET UNDERLYING COMMUNICATIONS PARAMETERS
+		Establishes parameters for the underlying communication (e.g. radio
+		parameters as appropriate).  Commands begin with a single byte
+		payload:
+			0x00 CANCEL
+			0x01 ENQUEUE
+			0xFF APPLY
+		
+		Note that the contents of this payload after the initial header are
+		device specific.
+
+		This command is only accepted as a unicast payload.
+
+		As it may take many commands to set all the parameters of a device,
+		changes should be buffered until a finalize subcommand is sent.  All
+		responses, including to the command which applies the changes, are
+		sent using the old parameters.
+
+		Responses contain a single byte, paralleling the header, with 0x00
+		being interpreted as "unable to comply", 0x01 indicating a
+		successful parse, and 0xFF indicating that changes have been
+		applied.
+
+		It is RECOMMENDED that Hyperbola devices have a fixed-function
+		format fallback mechanism for configuration in addition to their
+		primary interface.  It is highly suggested that this be 3-wire
+		TTL UART at 9600 8n1, speaking Hyperbola.
+

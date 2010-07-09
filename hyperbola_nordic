@@ -1,0 +1,24 @@
+This defines the Nordic RF chipset (nRF24*) payload for Hyperbola packets.
+As might be expected, this system takes advantage of the underlying packeted
+nature of the transport, does not permit straddling, etc.  Moreover, to
+avoid the oddities of nRF's MAC scheme, we use the medium as a broadcast
+channel and use Hyperbola addresses and device IDs to sort it all out.
+
+Hyperbola devices speaking nRF SHALL come pre-configured with no
+Hyperbola-layer device ID and using a nRF parameters as follows:
+	Mode:		Enhanced Shock-Burst, Auto-Acknowledge
+	Data rate:	2 Mbps
+	MAC size:	5 bytes
+	MAC:		D8:CB:45:B8:D6 (truncated MD5 of "hyperbola")
+	channel:	0xC6 (first byte of same)
+	checksums:	2 bytes
+
+nRF imposes a 32 byte limit on all packets, which in turn means that all
+Hyberbola payloads are at most 28 bytes long.
+
+The SET UNDERLYING COMMUNICATIONS PARAMETERS command payload contains a
+subcommand vocabulary, allowing various parameters to be tuned.
+	0x00	CHANNEL (one byte follows)
+	0x01	MAC ADDRESS (bytes follow; must be 3, 4, or 5)
+Only a single subcommand may be sent per payload.
+
