@@ -1,0 +1,66 @@
+This document defines the Hyperbola commands specific to Radioflash
+controllers.
+
+Radioflash controllers have up to 16 groups of 8 outputs.  The low nibble of
+each command in the table below specifies to which group the command
+applies.  Radioflash devices, in IDENTIFY THYSELF Hyperbola commands, may
+(optionally) return an additional single byte indicating how many channel
+groups are in use.  Channel groups not in use must DESCRIBE themselves as
+empty.
+
+0x1_	DESCRIBE INPUTS
+0x2_	DESCRIBE OUTPUTS
+0x3_	REPORT INPUTS
+0x4_	REPORT OUTPUTS
+
+	Command forms when with zero more bytes, response payloads with 8 bytes
+	of data attached.  REPORT commands return the levels of I/O.  DESCRIBE
+	return from the following two type tables:
+
+	Input types:
+		0x00	None (no input at this offset in this group)
+		0x01	High Voltage Control Feedback (V)
+		0x02	Constant Current Control Feedback (.1 mA)
+
+	Output types:
+		0x00	None (no output at this offset in this group)
+		0x01	High Voltage Control Target (V)
+		0x02	Constant Current Control Target (.1 mA)
+
+	It is RECOMMENDED, for simplicity, that Feedback input types occupy the
+	same address (group and offset) as the devices they control.
+
+0x5_	REPORT OUTPUT GATES
+
+	Returns a one-byte payload with the output gate for this group.
+
+0x6_	SET OUTPUT GATES
+
+	Takes a one-byte payload enabling(1) or disabling (0) each output.
+	Replies with a REPORT OUTPUT GATE payload.
+
+0x7_	SET OUTPUTS
+	Takes a 9-byte payload.  The first byte is a bitmask specifying which
+	of the 8 subsequent bytes are used to set outputs.
+
+	Responds with a REPORT OUTPUTS payload.  Note the reported values
+	will be subject to any clamping done by the controller.
+
+0xA_	TIMED SET OUTPUT GATES
+
+	A three byte payload specifies the wait time, the hold time, and the
+	output gate to have during that hold time.  The output gate is restored
+	to its current value after the hold time has elapsed.
+
+	Time scales are in hundredths of a second.
+
+	Only one TIMED SET OUTPUT GATE is allowed in each group.
+
+	A SET OUTPUT GATES command during either the hold or wait time will
+	immediately set the output gates and clear the TIMED SET comand
+
+	Replies with a 1-byte payload:
+		0x00	success, waiting
+		0x01	TIMED SET already in progress, not enqueued
+
+

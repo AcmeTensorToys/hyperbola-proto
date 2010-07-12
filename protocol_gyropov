@@ -1,0 +1,58 @@
+This document defines Hyperbola commands specific to Gyropov interface
+devices.  It is currently a (very) rough draft.
+
+Gyropovs are what they sound like: a gyro and a bank of 16 LEDs which
+display messages via Persistance of Vision.  Data is loaded in device-
+specific ways using a TFTP-style push-based protocol in which the
+programmer SHALL wait for each response before moving on to the next
+and SHALL retransmit commands in the event of timeout or fabric NAK.
+
+Additionally, gyropovs can report their use to the Hyperbola network
+using a few simple pre-packaged modes.
+
+In IDENTIFY THYSELF packets, gyropovs additionally report:
+	1 byte: configuration data block size.  All writes must be padded to
+			multiples of this value or the last block may not be committed
+			to stable storage and series of WRITE CONFIGURATION DATA
+			commands must begin on integer multiples of this value or
+			they will be ignored.
+	1 byte: configuration data plane size, in units of 8 bytes.
+	1 byte: configuration data format version, to be defined eventually
+			below (XXX)
+
+0x10	READ CONFIGURATION DATA
+	1 byte offset into configuration data plane
+	
+	response: offset then 8 bytes (starting at that offset) response
+0x11	WRITE CONFIGURATION DATA
+	1 byte offset into configuration data plane
+	8 bytes of new content
+
+	response echos
+
+0x18	SET MODE
+	0x00: Random selection
+	0x01, index: Sequential selection from index
+	0x02, index: fixed selection at index
+
+	response echos
+
+0x20	DISABLE REPORTING MODE
+0x21	ENABLE REPORTING MODE
+	There's an 8-bit mask of fixed function report modes, each of
+	which may be enabled or disabled on the fly.
+
+	0x01: via SINGLE SHORT EVENT REPORT broadcasts
+	0x40, addr, bank, wait, hold, gate: Generate a Radioflash
+		TIMED SET OUTPUT GATES command for the target addr using the
+		other parameters given.
+	0x80, ...: as above, but a decaying thresholding scheme is
+		used to filter reports.
+
+	responses are one byte indicating live modes; modes not
+	understood will never become live.
+
+0x22	QUERY REPORTING PARAMETERS
+	Takes 1 byte with values [0,7] and returns it and the
+	parameters given when enabling the mode indexed by that
+	bit in the reporting mode mask, if any and if it is live.
