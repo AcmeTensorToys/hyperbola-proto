@@ -14,7 +14,7 @@ To conserve space, the IRCIE transport sheds the constant 0x55 header byte
 and the payload length as these values may be reconstructed from the
 transport.
 
-The IRCIE transport allows payloads up to 20 bytes, counting the remaining
+The IRCIE transport allows payloads up to 32 bytes, counting the remaining
 bits of the Hyperbola header (addresses and command byte, so payloads will
 never be fewer than three bytes long).
 
@@ -23,8 +23,9 @@ and T-encoded into 7 IRCIE symbols.  If there are an odd number of bytes,
 the last byte is T-encoded into 4 symbols.  This message is then sent inside
 an IRCIE message container (the reserved type tag is 6).
 
-Including IRCIE framing, a 20-byte message will come to 84 bytes of IRC
-message; a 19-byte one will come to 81 bytes.  For example:
+Including IRCIE framing, a 32-byte message will come to 126 bytes of IRC
+message; a 20-byte one will come to 84 bytes; 19 to 81; etc.  For example,
+this is a 21-byte payload:
 
 OO		FRAME
 OC_C	metaL = 76
@@ -39,5 +40,6 @@ BBOOCCC		r
 BBO_COC		b
 BBVCCVC		o
 BBVVC_C		l
-BOBC		/	15th byte of subpayload
+BB_BOBC		a
+BB_B		/	17st byte of subpayload
 O		FRAME

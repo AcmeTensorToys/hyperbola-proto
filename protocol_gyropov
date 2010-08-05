@@ -2,10 +2,14 @@ This document defines Hyperbola commands specific to Gyropov interface
 devices.  It is currently a (very) rough draft.
 
 Gyropovs are what they sound like: a gyro and a bank of 16 LEDs which
-display messages via Persistance of Vision.  Data is loaded in device-
-specific ways using a TFTP-style push-based protocol in which the
-programmer SHALL wait for each response before moving on to the next
-and SHALL retransmit commands in the event of timeout or fabric NAK.
+display messages via Persistance of Vision.
+
+Gyropovs speak rTFTP as per Hyperbola core.  Write requests must be to file
+zero and must move sequentially through that file; failure to do so will
+result in an rTFTP protocol violation error and will cause the device to
+loop waiting for another rTFTP attempt that begins at 0.  (The device does
+not restart since it may not be able to revert to the old configuration data
+in all cases.)
 
 Additionally, gyropovs can report their use to the Hyperbola network
 using a few simple pre-packaged modes.
@@ -16,24 +20,15 @@ In IDENTIFY THYSELF packets, gyropovs additionally report:
 			to stable storage and series of WRITE CONFIGURATION DATA
 			commands must begin on integer multiples of this value or
 			they will be ignored.
-	1 byte: configuration data plane size, in units of 8 bytes.
+	1 byte: configuration data plane size, in rTFTP transfer lines
 	1 byte: configuration data format version, to be defined eventually
 			below (XXX)
-
-0x10	READ CONFIGURATION DATA
-	1 byte offset into configuration data plane
-	
-	response: offset then 8 bytes (starting at that offset) response
-0x11	WRITE CONFIGURATION DATA
-	1 byte offset into configuration data plane
-	8 bytes of new content
-
-	response echos
 
 0x18	SET MODE
 	0x00: Random selection
 	0x01, index: Sequential selection from index
 	0x02, index: fixed selection at index
+	0xFF: disable display
 
 	response echos
 
@@ -42,7 +37,7 @@ In IDENTIFY THYSELF packets, gyropovs additionally report:
 	There's an 8-bit mask of fixed function report modes, each of
 	which may be enabled or disabled on the fly.
 
-	0x01: via SINGLE SHORT EVENT REPORT broadcasts
+	0x01: via SINGLE EVENT REPORT broadcasts
 	0x40, addr, bank, wait, hold, gate: Generate a Radioflash
 		TIMED SET OUTPUT GATES command for the target addr using the
 		other parameters given.

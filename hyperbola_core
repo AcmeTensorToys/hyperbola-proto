@@ -14,6 +14,12 @@ the line idles for more than N byte times while framing, reset the state
 machine."  On packetizing unreliable transports, we suggest not having
 Hyperbola packets straddle link-layer packets.
 
+Transports MUST be able to handle packets as large as 32 bytes and perhaps
+larger.  Devices SHOULD support their full command set over <=32 byte
+packets but MAY take advantage of higher width transports when it is clear
+that they will be manufactured with such.  (Note that the device-specific
+protocol documentation MUST state this!)
+
 There is a region of common commands understood by all Hyperbola
 devices (values 0x00 to 0x0F) and a region which is target device
 specific.
@@ -88,6 +94,32 @@ Common commands:
 		primary interface.  It is highly suggested that this be 3-wire
 		TTL UART at 9600 8n1, speaking Hyperbola.
 
+	0x08	REALLY TRIVIAL FILE TRANSPORT PROTOCOL : READ
+	0x09	REALLY TRIVIAL FILE TRANSPORT PROTOCOL : WRITE
+
+		rTFTP is even simpler than TFTP.  Not all device types support
+		rTFTP.  Those that do must indicate various bounds in their
+		IDENTIFY THYSELF responses.
+
+		These commands are brought out to the core merely to reduce
+		duplication in the per-device specifications.
+
+		rTFTP understands up to 256 "files" of 4096 bytes each, but again,
+		devices may not have that many "files", may view "files" as a larger
+		offset into a singular dataset, or may have many shorter files.  It
+		is device-specific as to how to safely enter and exit rTFTP mode.
+
+		Read requests are two bytes: file and 16-byte boundary index.
+		Read responses echo the header then have an error code
+			followed by a code-dependent payload:
+				0x00 : success -- followed the 16 bytes in question.
+				0xFF : no such file
+				0xFE : request out of bounds
+				0xF0 : protocol violation, some number of writes may have
+				       been lost.  Restart the file transfer.
+		Write requests look like read responses.
+		Write responses look like read responses.
+
 Broadcast-only notices
 
 	Unlike commands, these packets do not elicit responses to the
@@ -108,9 +140,9 @@ Broadcast-only notices
 		on the network, and may be used even by devices that do not have
 		addresses.
 
-		The payload here is up to 13 bytes:
+		The payload here is 13 bytes:
 			device type ID
 			device serial number
 			device-specific event ID (1 byte)
-			event value (0 to 4 bytes)
+			event value (4 bytes)
 

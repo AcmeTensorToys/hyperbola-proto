@@ -1,5 +1,15 @@
+# This file tracks Device Type IDs and the allocation of Device IDs therein.
+# Device Type IDs are allocated on an as-needed basis; the canonical location
+# of this document is the authoritative list of Device Type IDs.
+# Device IDs are allocated in units of 4096 (bottom 12 bits free) to various
+# manufacturers; it is the responsibility of that manufacturer to ensure that
+# Device IDs are never reused.
+
+414D4400	OpenAMD Bridge
+414D4401	OpenAMD Beacon
 44455600	Chiptunes Controller, Unspecified configuration
 44455601	Radioflash Controller, Unspecified configuration
 4F4F4800	Chiptunes Controller, Fixed Function
 4F4F4801	Radioflash Controller, Fixed Function
 4F4F4802	Gyropov Interface Device
+FFFFFF00-FF	RESERVED FOR LOCAL EXPERIMENTATION
