@@ -5,6 +5,7 @@
 # manufacturers; it is the responsibility of that manufacturer to ensure that
 # Device IDs are never reused.
 
+00000000	RESERVED FOR WILDCARD
 414D4400	OpenAMD Bridge
 414D4401	OpenAMD Beacon
 44455600	Chiptunes Controller, Unspecified configuration

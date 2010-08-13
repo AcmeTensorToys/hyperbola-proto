@@ -28,7 +28,8 @@ empty.
 		0x02	Constant Current Control Target (.1 mA)
 
 	It is RECOMMENDED, for simplicity, that Feedback input types occupy the
-	same address (group and offset) as the devices they control.
+	same address (group and offset) as the devices they control.  Related
+	I/O should be kept in the same channel group.
 
 0x5_	REPORT OUTPUT GATES
 
