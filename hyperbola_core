@@ -3,10 +3,10 @@ modeled loosely on MIDI and the OpenAMD protocol set.
 
 The packet framing is composed of the following one-byte fields,
 which prefix data.
-	The constant byte 0x55.
+	The constant byte 0x55
 	A destination identifier/broadcast (sim. MIDI channel)
 	A source identifier
-	A packet length (of the data inside the frame)
+	A flag & packet length (of the data inside the frame) byte
 	A command byte
 
 On byte-wise transports, we suggest imposing a timeout rule of the form "if
@@ -14,11 +14,15 @@ the line idles for more than N byte times while framing, reset the state
 machine."  On packetizing unreliable transports, we suggest not having
 Hyperbola packets straddle link-layer packets.
 
-Transports MUST be able to handle packets as large as 32 bytes and perhaps
-larger.  Devices SHOULD support their full command set over <=32 byte
-packets but MAY take advantage of higher width transports when it is clear
-that they will be manufactured with such.  (Note that the device-specific
-protocol documentation MUST state this!)
+Transports with their own framing may opt to elide or translate header
+fields, so long as the mapping is bijective and reversed.
+Transports MUST be able to handle packets as large as 31 bytes of payload.
+
+The most significant three bits of the lengh byte are flags in the Hyperbola
+protocol, leaving 5 bits (0-31) for the payload length.
+	0x80 -- RESPONSE, meaning that this is not a command.
+	0x40 -- RESERVED MAINTAIN ZERO 
+	0x20 -- RESERVED MAINTAIN ZERO
 
 There is a region of common commands understood by all Hyperbola
 devices (values 0x00 to 0x0F) and a region which is target device
@@ -45,6 +49,7 @@ Common commands:
 				device type ID, 0x00000000
 			Broadcast carrier, all devices of all types:
 				0x00000000, 0x00000000
+				(or ommitted in query)
 			Unicast carrier:
 				may be omitted (ignored if present)
 
@@ -146,3 +151,18 @@ Broadcast-only notices
 			device-specific event ID (1 byte)
 			event value (4 bytes)
 
+	0x21	BROADCAST ALERTS
+		This event is intended as rapid, network-wide means of shutting
+		down or clamping actuators on the network.
+
+		The payload here is one byte, which consists of an operation:
+			0xFF	RED		All actuators are to return to default state
+							immediately; controllers should enter their
+							reset configurations.
+
+			0x3F	YELLOW	Any "increasing" actuator slews are frozen
+							in time, if possible.  If this is not possible,
+							this message SHALL be treated as RED.
+
+			0x0F	GREEN	Signals clearance to lift temporary restrictions
+							imposed by YELLOW messages, if possible.
