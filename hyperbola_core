@@ -36,6 +36,11 @@ reserved to indicate "all units" of a given device type.  Broadcast packets
 may not contain device-specific command bytes, so the range 0x10 to 0xFF
 is again defined by this document.
 
+As Hyperbola transits networks with various reliability guarantees, it is
+recomended that commands attempt to be as idempotent as possible.  That
+said, it is in general impossible to derive a shared consensus of reality
+over an unreliable link, so some slack is permitted.
+
 Common commands:
 	0x00	IDENTIFY THYSELF
 
@@ -120,9 +125,11 @@ Common commands:
 				0x00 : success -- followed the 16 bytes in question.
 				0xFF : no such file
 				0xFE : request out of bounds
+				0xF1 : Sender has fallen behind receiver (message duplicates
+				       an already acknowledged message)
 				0xF0 : protocol violation, some number of writes may have
 				       been lost.  Restart the file transfer.
-		Write requests look like read responses.
+		Write requests have the same header and then the 16 bytes of data.
 		Write responses look like read responses.
 
 Broadcast-only notices
@@ -148,21 +155,39 @@ Broadcast-only notices
 		The payload here is 13 bytes:
 			device type ID
 			device serial number
-			device-specific event ID (1 byte)
 			event value (4 bytes)
+			device-specific event ID (1 byte)
 
 	0x21	BROADCAST ALERTS
-		This event is intended as rapid, network-wide means of shutting
-		down or clamping actuators on the network.
+		This event is intended as a mechanism for wide-scale information.
 
-		The payload here is one byte, which consists of an operation:
+		The payload here mimics SINGLE EVENT REPORTS but the sub-command
+		byte vocabulary is common:
+			device type ID
+			device serial number
+			sub command (1 byte)
+			optional suffix, up to 8 bytes.
+
+		Currently, the only sub-commands defined are a color code sequence,
+		used to provide a rapid, network-wide means of shutting down or
+		clamping actuators on the network.  These commands do not have
+		optional suffixes, and any suffix must be IGNORED.
+
 			0xFF	RED		All actuators are to return to default state
 							immediately; controllers should enter their
 							reset configurations.
 
-			0x3F	YELLOW	Any "increasing" actuator slews are frozen
+			0xFC	YELLOW	Any "increasing" actuator slews are frozen
 							in time, if possible.  If this is not possible,
 							this message SHALL be treated as RED.
 
-			0x0F	GREEN	Signals clearance to lift temporary restrictions
+			0xF8	GREEN	Signals clearance to lift temporary restrictions
 							imposed by YELLOW messages, if possible.
+
+			Some actuators may consider themselves unsafe at any speed
+			without a continuous stream of GREEN messages; this knowledge is
+			conveyed by the device's type identifier or device-type-specific
+			data.  Additionally, since broadcast messages may be lost in an
+			unreliable shared channel (e.g. radios) we suggest that color
+			status, if employed, be repeatedly sent at a relatively high
+			rate.

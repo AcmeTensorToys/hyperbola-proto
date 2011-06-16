@@ -1,0 +1,69 @@
+This document defines Hyperbola commans specific to Chiptunes controllers.  It
+is currently a (very) rough draft.  In brief summary, chiptunes controllers are
+scriptable four-voice waveform generators.  The Hyperbola protocol transport
+for their command vocabulary is intended to be decoupled from said vocabulary
+to the extent possible.
+
+Chiptunes controllers speak rTFTP as per Hyperbola core.  File indexes 0
+through 15 are reserved for flash configuration data, and must be written
+sequentially from offset 0 after the device has been stopped.  A write to
+offset index 15 offset 4096 or any play command signals completion; flash
+contents will be finalized before other commands are processed.  File
+indices 16 through 31 are reserved.  Other file indices are dynamically
+allocated by CREATE RAM INSTRUMENT and CREATE RAM TRACK, below.
+
+Chiptunes controllers respond to BROADCAST ALERTS.  RED is interpreted as full stop,
+YELLOW as pause, holding note, and GREEN as resuming if possible otherwise staying
+at a full stop.
+
+In IDENTIFY THYSELF packets, chiptunes controllers additionaly report:
+    1 byte: configuration data format version
+    1 byte: size of flash configuration block, in units of rTFTP transfer lines
+    1 byte: size of available RAM, in units of rTFTP transfer lines
+
+0x10    SONG CONTROL
+    0x00    Stop, no output
+    0x10    Pause, no output
+    0x11    Pause, hold note (freeze any slews)
+    0x18    Resume from pause if possible, if not, stay paused
+    0x19    Resume from pause if possible, if not, start from the top
+
+    0x20    Play at last set next index with all channels on song.
+    0x22    Play at last set next index with channels holding current state.
+        Bottom bit indicates loop (1) or single-play (0).
+
+    Responses echo.
+
+0x12    SET NEXT SONG INDEX
+    1 byte : RESERVED MAINTAIN ZERO
+    1 byte : row of song table
+
+    Changes take effect after the current song row has finished playing or when
+    the device is told to play.  Channels which are not on-song are unaffected.
+
+    Responses echo.
+
+0x20    CHANNEL ON-SONG
+    1 byte payload indicates channel mask to take on-channel
+
+    Responses echo.
+
+0x21    CHANNEL ON-TRACK
+    First payload byte "r l _ _ c c" where
+            r : RAM (1) or FLASH (0) track
+            l : Loop (1) or stop after (0) track
+    Second payload byte specifies track index
+            Looping track 0 is sometimes referred to as ``off-track''
+            and results in the channel executing only remote commands
+            for the duration of such a loop.
+
+    Responses echo.
+
+0x22    COMMANDS ON CHANNELS
+    Sets of three bytes: channel, command, parameter.
+
+    Responses echo.
+
+0x30	CREATE RAM INSTRUMENT
+0x31	CREATE RAM TRACK
+0x37	FREE RAM RESOURCE

@@ -3,10 +3,14 @@ controllers.
 
 Radioflash controllers have up to 16 groups of 8 outputs.  The low nibble of
 each command in the table below specifies to which group the command
-applies.  Radioflash devices, in IDENTIFY THYSELF Hyperbola commands, may
-(optionally) return an additional single byte indicating how many channel
-groups are in use.  Channel groups not in use must DESCRIBE themselves as
-empty.
+applies.  Radioflash devices, in IDENTIFY THYSELF Hyperbola commands, MUST
+return two bytes containing a bitmask of channel groups in use groups are in
+use.  Channel groups not in use must DESCRIBE themselves as empty.
+
+Radioflash devices reset all outputs on BROADCAST ALERT RED and will
+maintain this state until BROADCAST ALERT GREEN is seen.  BROADCAST ALERT
+YELLOW cancels any TIMED SET OUTPUT GATE that have not yet begun and forces
+immediate completion of those that have.
 
 0x1_	DESCRIBE INPUTS
 0x2_	DESCRIBE OUTPUTS
@@ -21,11 +25,15 @@ empty.
 		0x00	None (no input at this offset in this group)
 		0x01	High Voltage Control Feedback (V)
 		0x02	Constant Current Control Feedback (.1 mA)
+		0x10	Generic digital input, discrete: 0x00 or 0xFF
+		0x11	Generic digital input, 8-bit
 
 	Output types:
 		0x00	None (no output at this offset in this group)
 		0x01	High Voltage Control Target (V)
 		0x02	Constant Current Control Target (.1 mA)
+		0x10	Generic display indicator, intensity (discrete use top bit)
+		0x11	Generic display indicator, 8-bit discrete (e.g. LED bar)
 
 	It is RECOMMENDED, for simplicity, that Feedback input types occupy the
 	same address (group and offset) as the devices they control.  Related
